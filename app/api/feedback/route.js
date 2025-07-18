@@ -1,3 +1,4 @@
+// File: /app/api/feedback/route.js
 import { NextResponse } from 'next/server';
 import { execute } from '@/lib/db';
 import { getSessionUser } from '@/lib/auth';
@@ -18,8 +19,7 @@ export async function GET(req) {
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    } 
-    console.log("user---sssssss>",user);
+    }
 
     const { searchParams } = new URL(req.url);
     const search = searchParams.get("search") || "";
@@ -68,6 +68,7 @@ export async function GET(req) {
       SELECT
         c.id,
         c.complaint_code,
+        c.contact_name,
         u.name AS registered_by,
         p.name AS project_name,
         s.name AS source_name,
@@ -113,7 +114,7 @@ export async function POST(req) {
     const files = formData.getAll("files[]");
     const descriptions = formData.getAll("descriptions[]");
 
-    const complaint_code = `CMP-${randomBytes(4).toString("hex").toUpperCase()}`;
+    const complaint_code = `LHDP-FCM-${randomBytes(4).toString("hex").toUpperCase()}`;
     const status = "new";
 
     const insertQuery = `
@@ -150,6 +151,14 @@ export async function POST(req) {
 
     const complaintId = result.insertId;
 
+    // ✅ Log complaint creation
+    await execute(
+      `INSERT INTO complaint_logs (complaint_id, action, user_id, created_at)
+       VALUES (?, ?, ?, NOW())`,
+      [complaintId, "Complaint-feedback created", user.id]
+    );
+
+    // ✅ Save attachments
     const uploadsDir = path.join(process.cwd(), "public", "uploads");
     await Promise.all(
       files.map(async (file, index) => {

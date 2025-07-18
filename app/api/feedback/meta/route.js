@@ -5,10 +5,12 @@ export async function GET() {
     const [projects] = await db.query("SELECT id, name FROM feedback_projects");
     const [sources] = await db.query("SELECT id, name FROM feedback_sources");
     const [types] = await db.query("SELECT id, name FROM feedback_types");
+    const [managers] = await db.query("SELECT id, name FROM managers");
 
     return Response.json({
       projects,
       sources,
+      managers,
       types
     });
   } catch (error) {

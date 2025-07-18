@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -10,20 +10,26 @@ import {
 const menuByRole = {
   super_admin: [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'Complaints', href: '/dashboard/feedback-table', icon: FileText },
     { label: 'Register Complaint', href: '/dashboard/feedback', icon: MessageSquare },
+    { label: 'Complaints', href: '/dashboard/feedback-table', icon: FileText },
+    { label: 'In-Process Complaints', href: '/dashboard/in-process-complaints', icon: FileText },
+    { label: 'Closed Complaints', href: '/dashboard/closed-complaints', icon: FileText },
+    { label: 'Waiting for Response', href: '/dashboard/waiting-for-response', icon: FileText },
     { label: 'Users', href: '/dashboard/users', icon: Users },
     { label: 'Roles', href: '/dashboard/roles', icon: Shield },
     { label: 'Settings', href: '/dashboard/settings', icon: Settings },
   ],
   fcm_user: [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'Complaints', href: '/dashboard/feedback-table', icon: FileText },
     { label: 'Register Complaint', href: '/dashboard/feedback', icon: MessageSquare },
+    { label: 'Complaints', href: '/dashboard/feedback-table', icon: FileText },
+    { label: 'In-Process Complaints', href: '/dashboard/in-process-complaints', icon: FileText },
+    { label: 'Closed Complaints', href: '/dashboard/closed-complaints', icon: FileText },
+    { label: 'Waiting for Response', href: '/dashboard/waiting-for-response', icon: FileText },
   ],
   registered_user: [
     { label: 'Register Complaint', href: '/dashboard/feedback', icon: MessageSquare },
-    // { label: 'My Complaints', href: '/dashboard/feedback-table', icon: FileText },
+    // { label: 'My Complaints', href: '/dashboard/my-complaints', icon: FileText },
   ],
 };
 

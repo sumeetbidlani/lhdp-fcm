@@ -1,20 +1,17 @@
-// app/dashboard/feedback-table/ComplaintListPage.jsx
 "use client";
-
+import { toast } from "react-hot-toast";
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function ComplaintListPage() {
- const [complaints, setComplaints] = useState([]);
+  const [complaints, setComplaints] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [projectFilter, setProjectFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [sourceFilter, setSourceFilter] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [meta, setMeta] = useState({ projects: [], sources: [] });
 
@@ -32,38 +29,48 @@ export default function ComplaintListPage() {
     fetchMeta();
   }, []);
 
-const fetchComplaints = async () => {
-  setLoading(true);
-  try {
-    const params = new URLSearchParams({
-      search,
-      project: projectFilter,
-      status: statusFilter,
-      source: sourceFilter,
-      dateFrom,
-      dateTo,
-    });
-    const res = await fetch(`/api/feedback?${params.toString()}`);
-    const data = await res.json();
-
-    if (Array.isArray(data)) {
-      setComplaints(data);
-    } else {
-      console.error("Expected array but got:", data);
-      setComplaints([]); // fallback to empty
+  const fetchComplaints = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        search,
+        project: projectFilter,
+        status: statusFilter,
+        source: sourceFilter,
+      });
+      const res = await fetch(`/api/feedback?${params.toString()}`);
+      const data = await res.json();
+      setComplaints(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Fetch error:", err);
+      setComplaints([]);
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    console.error("Failed to fetch complaints", err);
-    setComplaints([]);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
+  async function handleMarkInProcess(id) {
+    try {
+      const res = await fetch(`/api/feedback/${id}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "in_process" }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success("Marked as In-Process");
+        fetchComplaints();
+      } else {
+        toast.error(data.error || "Failed to update status");
+      }
+    } catch (error) {
+      toast.error("Error updating status");
+    }
+  }
 
   useEffect(() => {
     fetchComplaints();
-  }, [search, projectFilter, statusFilter, sourceFilter, dateFrom, dateTo]);
+  }, [search, projectFilter, statusFilter, sourceFilter]);
 
   useEffect(() => {
     let filteredData = [...complaints];
@@ -91,8 +98,6 @@ const fetchComplaints = async () => {
     setProjectFilter("");
     setStatusFilter("");
     setSourceFilter("");
-    setDateFrom("");
-    setDateTo("");
   };
 
   const paginated = filtered.slice((page - 1) * perPage, page * perPage);
@@ -104,99 +109,81 @@ const fetchComplaints = async () => {
   };
 
   return (
-    <div className="p-6 dark:bg-black min-h-screen">
-      <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">📋 Complaints & Feedback</h1>
-        <div className="flex w-full md:w-auto gap-2">
-          <input
-            type="text"
-            placeholder="Search by code or project..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900 text-gray-800 dark:text-white"
-          />
-          <button
-            onClick={resetFilters}
-            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-          >Reset</button>
+
+    <div className="p-6 min-h-screen dark:bg-black bg-white text-gray-900 dark:text-white">
+      
+
+      {/* Logo + Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-bold">📋 Complaints/ Feedbacks</h1>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+      {/* Filters */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-6">
+        <input
+          type="text"
+          placeholder="Search by code or project..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="px-3 py-2 border rounded bg-white dark:bg-gray-900 dark:border-gray-700"
+        />
         <select
           value={projectFilter}
           onChange={e => setProjectFilter(e.target.value)}
-          className="px-3 py-2 border rounded-md dark:border-gray-700 dark:bg-gray-900 bg-white text-sm text-gray-800 dark:text-white"
+          className="px-3 py-2 border rounded dark:bg-gray-900 dark:border-gray-700"
         >
           <option value="">All Projects</option>
           {meta.projects.map(p => (
             <option key={p.id} value={p.name}>{p.name}</option>
           ))}
         </select>
-
         <select
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value)}
-          className="px-3 py-2 border rounded-md dark:border-gray-700 dark:bg-gray-900 bg-white text-sm text-gray-800 dark:text-white"
+          className="px-3 py-2 border rounded dark:bg-gray-900 dark:border-gray-700"
         >
           <option value="">All Statuses</option>
           <option value="new">New</option>
           <option value="in-progress">In Progress</option>
           <option value="closed">Closed</option>
         </select>
-
         <select
           value={sourceFilter}
           onChange={e => setSourceFilter(e.target.value)}
-          className="px-3 py-2 border rounded-md dark:border-gray-700 dark:bg-gray-900 bg-white text-sm text-gray-800 dark:text-white"
+          className="px-3 py-2 border rounded dark:bg-gray-900 dark:border-gray-700"
         >
           <option value="">All Sources</option>
           {meta.sources.map(s => (
             <option key={s.id} value={s.name}>{s.name}</option>
           ))}
         </select>
-
-        <input
-          type="date"
-          value={dateFrom}
-          onChange={e => setDateFrom(e.target.value)}
-          className="px-3 py-2 border rounded-md dark:border-gray-700 dark:bg-gray-900 bg-white text-sm text-gray-800 dark:text-white"
-          placeholder="From Date"
-        />
-
-        <input
-          type="date"
-          value={dateTo}
-          onChange={e => setDateTo(e.target.value)}
-          className="px-3 py-2 border rounded-md dark:border-gray-700 dark:bg-gray-900 bg-white text-sm text-gray-800 dark:text-white"
-          placeholder="To Date"
-        />
-
         <button
           onClick={resetFilters}
-          className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md text-sm"
+          className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 col-span-1"
         >
           Reset
         </button>
       </div>
 
+      {/* Table */}
       {loading ? (
-        <p className="text-gray-700 dark:text-gray-300">Loading...</p>
+        <p>Loading...</p>
       ) : filtered.length === 0 ? (
-        <p className="text-center text-gray-600 dark:text-gray-400">No results found.</p>
+        <p className="text-center">No complaints found.</p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm border dark:border-gray-700">
+        <div className="overflow-x-auto shadow rounded border border-gray-200 dark:border-gray-700">
+          <table className="min-w-full text-sm">
             <thead className="bg-gray-100 dark:bg-gray-800">
               <tr>
                 <th className="px-4 py-2 text-left cursor-pointer" onClick={() => handleSort("complaint_code")}>Code {renderSortIcon("complaint_code")}</th>
                 <th className="px-4 py-2 text-left cursor-pointer" onClick={() => handleSort("project_name")}>Project {renderSortIcon("project_name")}</th>
-                <th className="px-4 py-2 text-left cursor-pointer" onClick={() => handleSort("date_received")}>Received {renderSortIcon("date_received")}</th>
-                <th className="px-4 py-2 text-left cursor-pointer" onClick={() => handleSort("created_on")}>Created {renderSortIcon("created_on")}</th>
-                <th className="px-4 py-2 text-left cursor-pointer" onClick={() => handleSort("status")}>Status {renderSortIcon("status")}</th>
-                <th className="px-4 py-2 text-left">Anonymity</th>
-                <th className="px-4 py-2 text-left">Registered By</th>
-                <th className="px-4 py-2">Actions</th>
+                <th className="px-4 py-2 text-left">Received</th>
+                <th className="px-4 py-2 text-left">Status</th>
+                <th className="px-4 py-2 text-left">Registerd By</th>
+                <th className="px-4 py-2 text-left">Complaint/Feedback By</th>
+                <th className="px-4 py-2 text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -205,14 +192,33 @@ const fetchComplaints = async () => {
                   <td className="px-4 py-2">{c.complaint_code}</td>
                   <td className="px-4 py-2">{c.project_name}</td>
                   <td className="px-4 py-2">{new Date(c.date_received).toLocaleDateString()}</td>
-                  <td className="px-4 py-2">{new Date(c.created_on).toLocaleDateString()}</td>
-                  <td className="px-4 py-2 capitalize">{c.status}</td>
-                  <td className="px-4 py-2">{c.anonymity_status}</td>
+                  <td className="px-4 py-2">
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold
+                      ${c.status === "new" ? "bg-blue-100 text-blue-700" :
+                        c.status === "in-progress" ? "bg-yellow-100 text-yellow-700" :
+                        c.status === "closed" ? "bg-green-100 text-green-700" : ""}`}>
+                      {c.status}
+                    </span>
+                  </td>
                   <td className="px-4 py-2">{c.registered_by}</td>
-                  <td className="px-4 py-2 text-center">
+
+                  <td className="px-4 py-2">
+                    {c.anonymity_status === "Anonymous" ? "Anonymous" : c.contact_name}
+                  </td>
+                  <td className="px-4 py-2 text-center flex justify-center gap-2">
                     <Link href={`/dashboard/feedback-table/${c.id}`}>
-                      <button className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-800">View</button>
+                      <button className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-800">
+                        View
+                      </button>
                     </Link>
+                    {c.status === "new" && (
+                      <button
+                        onClick={() => handleMarkInProcess(c.id)}
+                        className="px-4 py-1 rounded-full bg-yellow-500 text-white hover:bg-yellow-600"
+                      >
+                        🚧 Mark In-Process
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -221,10 +227,16 @@ const fetchComplaints = async () => {
         </div>
       )}
 
-      <div className="mt-4 flex justify-end flex-wrap gap-2">
+      {/* Pagination */}
+      <div className="mt-6 flex justify-center flex-wrap gap-2">
         {Array.from({ length: totalPages }, (_, i) => (
           <Link key={i} href={`?page=${i + 1}`}>
-            <button className={`px-3 py-1 text-sm border rounded ${i + 1 === page ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 dark:text-white'}`}>
+            <button
+              className={`px-3 py-1 text-sm border rounded-md
+                ${i + 1 === page
+                  ? "bg-blue-600 text-white"
+                  : "bg-white dark:bg-gray-800 dark:text-white border-gray-300 dark:border-gray-600"}`}
+            >
               {i + 1}
             </button>
           </Link>
